@@ -132,26 +132,37 @@ def get_json(url):
     except: return None
 
 def fetch_stories():
-    print(f"🕵️  Gathering intel from r/{SUBREDDIT}...")
+    max_attempts = 3
     url = f"https://www.reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
-    data = get_json(url)
-    if not data: return []
-    stories = []
-    for post in data['data']['children']:
-        p = post['data']
-        story_blob = f"---\nTITLE: {p.get('title')}\nAUTHOR: u/{p.get('author')}\nUPVOTES: {p.get('score')}\nBODY TEXT: {p.get('selftext', '')[:400]}\n"
+    
+    for attempt in range(max_attempts):
+        print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
+        data = get_json(url)
         
-        c_data = get_json("https://www.reddit.com" + p.get('permalink') + ".json?sort=top")
-        if c_data:
-            c_list = c_data[1]['data']['children']
-            comments_text = []
-            for c in c_list[:2]:
-                if 'body' in c['data'] and c['data']['body'] != "[deleted]":
-                    comments_text.append(f"- {c['data']['author']}: {c['data']['body'][:120]}")
-            story_blob += "TOP COMMENTS:\n" + "\n".join(comments_text)
-        stories.append(story_blob)
-        time.sleep(0.5) 
-    return stories
+        if data:
+            stories = []
+            for post in data['data']['children']:
+                p = post['data']
+                story_blob = f"---\nTITLE: {p.get('title')}\nAUTHOR: u/{p.get('author')}\nUPVOTES: {p.get('score')}\nBODY TEXT: {p.get('selftext', '')[:400]}\n"
+                
+                c_data = get_json("https://www.reddit.com" + p.get('permalink') + ".json?sort=top")
+                if c_data:
+                    c_list = c_data[1]['data']['children']
+                    comments_text = []
+                    for c in c_list[:2]:
+                        if 'body' in c['data'] and c['data']['body'] != "[deleted]":
+                            comments_text.append(f"- {c['data']['author']}: {c['data']['body'][:120]}")
+                    story_blob += "TOP COMMENTS:\n" + "\n".join(comments_text)
+                stories.append(story_blob)
+                time.sleep(0.5) 
+            return stories
+        
+        if attempt < max_attempts - 1:
+            print(f"⚠️  Failed to fetch data. Retrying in 2 seconds...")
+            time.sleep(2)
+    
+    print("❌ Failed to fetch data after 3 attempts.")
+    return []
 
 def generate_newsletter_content(raw_stories):
     print("🧠 AI Editor is writing the newspaper...")
