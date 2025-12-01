@@ -138,7 +138,8 @@ def get_json(url):
 
 def fetch_stories():
     max_attempts = 3
-    url = f"https://www.reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
+    url = f"https://old.reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
+
     
     for attempt in range(max_attempts):
         print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
@@ -150,7 +151,8 @@ def fetch_stories():
                 p = post['data']
                 story_blob = f"---\nTITLE: {p.get('title')}\nAUTHOR: u/{p.get('author')}\nUPVOTES: {p.get('score')}\nBODY TEXT: {p.get('selftext', '')[:400]}\n"
                 
-                c_data = get_json("https://www.reddit.com" + p.get('permalink') + ".json?sort=top")
+                c_data = get_json("https://old.reddit.com" + p.get('permalink') + ".json?sort=top")
+
                 if c_data:
                     c_list = c_data[1]['data']['children']
                     comments_text = []
