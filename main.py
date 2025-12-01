@@ -138,7 +138,7 @@ def get_json(url):
 
 def fetch_stories():
     max_attempts = 3
-    url = url = f"https://www.reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6&raw_json=1"
+    url = f"https://www.reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
     
     for attempt in range(max_attempts):
         print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
