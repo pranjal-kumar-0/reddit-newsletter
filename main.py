@@ -7,7 +7,6 @@ import markdown
 from html2image import Html2Image
 from PIL import Image  
 
-# --- CONFIGURATION ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 NEWSLETTER_ROLE_ID = os.getenv("NEWSLETTER_ROLE_ID")
@@ -139,7 +138,7 @@ def get_json(url):
 
 def fetch_stories():
     max_attempts = 3
-    url = f"https://www.reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
+    url = url = f"https://www.reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6&raw_json=1"
     
     for attempt in range(max_attempts):
         print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
