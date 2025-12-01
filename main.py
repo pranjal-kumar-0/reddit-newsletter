@@ -10,6 +10,7 @@ from PIL import Image
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 NEWSLETTER_ROLE_ID = os.getenv("NEWSLETTER_ROLE_ID")
+SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY")
 
 SUBREDDIT = "vitap"
 HEADERS = {
@@ -138,7 +139,7 @@ def get_json(url):
 
 def fetch_stories():
     max_attempts = 3
-    url = f"https://www.reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
+    url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url=https://reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
     
     for attempt in range(max_attempts):
         print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
@@ -150,7 +151,10 @@ def fetch_stories():
                 p = post['data']
                 story_blob = f"---\nTITLE: {p.get('title')}\nAUTHOR: u/{p.get('author')}\nUPVOTES: {p.get('score')}\nBODY TEXT: {p.get('selftext', '')[:400]}\n"
                 
-                c_data = get_json("https://www.reddit.com" + p.get('permalink') + ".json?sort=top")
+                comment_url = "https://reddit.com" + p.get("permalink") + ".json?sort=top"
+                proxy_url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url={comment_url}"
+                c_data = get_json(proxy_url)
+
                 if c_data:
                     c_list = c_data[1]['data']['children']
                     comments_text = []
