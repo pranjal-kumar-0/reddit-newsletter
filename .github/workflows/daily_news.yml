@@ -1,8 +1,9 @@
+#meow
 name: Daily VIT AP News
 
 on:
   schedule:
-    - cron: '30 15 * * *'
+    - cron: '00 16 * * *'
   workflow_dispatch:
 
 jobs:
