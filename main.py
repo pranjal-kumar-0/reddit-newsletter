@@ -33,88 +33,35 @@ NEWSPAPER_CSS = """
         font-family: 'Lora', serif;
         margin: 0;
         padding: 0;
+        /* We make the body transparent so we can crop easily later */
         background-color: transparent; 
     }
 
     .container {
         display: inline-block; 
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        background-color: #f4f1ea;
         width: 800px;
         padding: 40px 50px;
-        color: #f4f1ea;
+        color: #111;
         
+        /* Margin ensures the shadow isn't cut off */
         margin: 20px; 
-        box-shadow: 0 0 40px rgba(255, 215, 0, 0.4), 0 0 60px rgba(255, 105, 180, 0.2);
+        box-shadow: 0 0 30px rgba(0,0,0,0.3);
         
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, rgba(255, 105, 180, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 50% 50%, rgba(173, 216, 230, 0.05) 0%, transparent 50%);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .container::before {
-        content: "⭐ ✨ 🎊 🎉 ⭐ ✨ 🎊 🎉 ⭐ ✨ 🎊 🎉 ⭐ ✨ 🎊 🎉";
-        position: absolute;
-        top: 10px;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 20px;
-        opacity: 0.6;
-        animation: sparkle 3s infinite;
-    }
-
-    .container::after {
-        content: "🎆 🎇 🎆 🎇 🎆 🎇 🎆 🎇 🎆 🎇 🎆 🎇 🎆 🎇 🎆 🎇";
-        position: absolute;
-        bottom: 10px;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 20px;
-        opacity: 0.6;
-        animation: sparkle 3s infinite 1.5s;
-    }
-
-    @keyframes sparkle {
-        0%, 100% { opacity: 0.4; transform: scale(1); }
-        50% { opacity: 0.8; transform: scale(1.05); }
+        background-image: linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent);
+        background-size: 50px 50px;
     }
 
     h1 {
         font-family: 'Playfair Display', serif;
-        font-size: 70px;
+        font-size: 80px;
         text-align: center;
-        margin: 40px 0 10px 0;
-        background: linear-gradient(45deg, #ffd700, #ff69b4, #87ceeb, #ffd700);
-        background-size: 300% 300%;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        line-height: 0.9;
-        border-bottom: 4px double #ffd700;
-        padding-bottom: 20px;
-        text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        animation: gradient-shift 4s ease infinite;
-    }
-
-    @keyframes gradient-shift {
-        0%, 100% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-    }
-
-    .special-banner {
-        text-align: center;
-        font-family: 'Playfair Display', serif;
-        font-size: 28px;
-        font-weight: 900;
-        color: #ffd700;
-        text-transform: uppercase;
-        margin: 15px 0 20px 0;
-        letter-spacing: 4px;
-        text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 20px rgba(255, 105, 180, 0.6);
+        margin: 10px 0;
+        color: #111;
+        line-height: 0.8;
+        border-bottom: 4px double #111;
+        padding-bottom: 25px;
+        text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
     }
 
     .date-line {
@@ -122,18 +69,17 @@ NEWSPAPER_CSS = """
         font-family: 'Oswald', sans-serif;
         font-size: 13px;
         text-transform: uppercase;
-        border-bottom: 2px solid #ffd700;
+        border-bottom: 1px solid #333;
         margin-bottom: 30px;
         padding-bottom: 8px;
         letter-spacing: 3px;
         font-weight: bold;
-        color: #87ceeb;
     }
 
     .columns {
         column-count: 2;
         column-gap: 40px;
-        column-rule: 2px solid rgba(255, 215, 0, 0.3);
+        column-rule: 1px solid #ccc;
         text-align: justify;
     }
 
@@ -142,45 +88,27 @@ NEWSPAPER_CSS = """
         font-size: 24px;
         font-weight: 900;
         text-transform: uppercase;
-        color: #ffd700;
+        color: #111;
         margin-top: 0;
         margin-bottom: 10px;
         line-height: 1;
         break-after: avoid;
-        text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
     }
     
     h2:not(:first-child) {
         margin-top: 30px;
-        border-top: 2px solid #ffd700;
+        border-top: 2px solid #111;
         padding-top: 15px;
     }
 
-    p { 
-        font-size: 15px; 
-        line-height: 1.5; 
-        margin-bottom: 15px; 
-        color: #f4f1ea; 
-    }
-    
+    p { font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: #222; }
     ul { padding-left: 20px; margin-top: 0; }
-    
-    li { 
-        font-size: 15px; 
-        margin-bottom: 8px; 
-        line-height: 1.4; 
-        color: #f4f1ea;
-    }
-    
-    li strong { 
-        font-family: 'Oswald', sans-serif; 
-        text-transform: uppercase; 
-        color: #87ceeb; 
-    }
+    li { font-size: 15px; margin-bottom: 8px; line-height: 1.4; }
+    li strong { font-family: 'Oswald', sans-serif; text-transform: uppercase; color: #444; }
 
     blockquote {
-        border-left: 4px solid #ffd700;
-        background: rgba(255, 215, 0, 0.1);
+        border-left: 4px solid #111;
+        background: #e8e4db;
         margin: 20px 0;
         padding: 10px 15px;
         font-style: italic;
@@ -188,8 +116,6 @@ NEWSPAPER_CSS = """
         font-weight: 700;
         font-size: 16px;
         break-inside: avoid;
-        color: #87ceeb;
-        box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
     }
 
     .footer {
@@ -197,10 +123,10 @@ NEWSPAPER_CSS = """
         font-family: 'Oswald', sans-serif;
         font-size: 10px;
         margin-top: 30px;
-        border-top: 1px solid #ffd700;
+        border-top: 1px solid #111;
         padding-top: 10px;
         width: 100%;
-        color: #87ceeb;
+        color: #666;
     }
 </style>
 """
@@ -213,7 +139,7 @@ def get_json(url):
 
 def fetch_stories():
     max_attempts = 3
-    url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url=https://reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=12"
+    url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url=https://reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
     
     for attempt in range(max_attempts):
         print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
@@ -337,8 +263,7 @@ def generate_image_from_markdown(md_text):
     <body>
         <div class="container" id="newspaper">
             <h1>VIT AP NEWS</h1>
-            <div class="special-banner">🎊 New Year's Eve Special 🎊</div>
-            <div class="date-line">VOL. IV • {today} • 2025 COUNTDOWN EDITION</div>
+            <div class="date-line">VOL. IV • {today} • PRICE: YOUR SANITY</div>
             
             <div class="columns">
                 {html_content}
@@ -383,7 +308,7 @@ def generate_image_from_markdown(md_text):
             
     except Exception as e:
         print(f"⚠️ Image processing error: {e}")
-        
+
 def send_image_to_discord():
     print("🚀 Publishing Image to Discord...")
     if not os.path.exists(IMAGE_FILENAME):
