@@ -2,7 +2,7 @@ name: Daily VIT AP News
 
 on:
   schedule:
-    - cron: '30 18 * * *'
+    - cron: '8 15 * * *'
   workflow_dispatch:
 
 jobs:
