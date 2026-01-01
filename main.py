@@ -5,7 +5,9 @@ import os
 import google.generativeai as genai
 import markdown
 from html2image import Html2Image
-from PIL import Image  
+from PIL import Image
+from dotenv import load_dotenv
+load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
@@ -138,46 +140,78 @@ def get_json(url):
     except: return None
 
 def fetch_stories():
-    max_attempts = 3
-    url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url=https://reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
-    
-    for attempt in range(max_attempts):
-        print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
-        data = get_json(url)
-        
-        if data and 'data' in data and 'children' in data['data']:
-            stories = []
-            for post in data['data']['children']:
-                p = post['data']
-                story_blob = f"---\nTITLE: {p.get('title')}\nAUTHOR: u/{p.get('author')}\nUPVOTES: {p.get('score')}\nBODY TEXT: {p.get('selftext', '')[:400]}\n"
-                
-                comment_url = "https://reddit.com" + p.get("permalink") + ".json?sort=top"
-                proxy_url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url={comment_url}"
-                c_data = get_json(proxy_url)
+    from bs4 import BeautifulSoup
 
-                if c_data and len(c_data) > 1 and 'data' in c_data[1] and 'children' in c_data[1]['data']:
-                    c_list = c_data[1]['data']['children']
+    print(f"🕵️  Gathering intel from r/{SUBREDDIT} via old.reddit.com...")
+
+    base_url = f"https://old.reddit.com/r/{SUBREDDIT}/"
+    stories = []
+
+    try:
+        resp = requests.get(base_url, headers=HEADERS, timeout=10)
+        if resp.status_code != 200:
+            print("❌ Failed to load subreddit page.")
+            return []
+
+        soup = BeautifulSoup(resp.text, "html.parser")
+        posts = soup.find_all("div", class_="thing", limit=10)
+
+        for post in posts:
+            title_tag = post.find("a", class_="title")
+            author = post.get("data-author", "unknown")
+            score = post.get("data-score", "0")
+            permalink = post.get("data-permalink")
+
+            if not title_tag or not permalink:
+                continue
+
+            title = title_tag.text.strip()
+
+            story_blob = (
+                f"---\n"
+                f"TITLE: {title}\n"
+                f"AUTHOR: u/{author}\n"
+                f"UPVOTES: {score}\n"
+                f"BODY TEXT:\n"
+            )
+
+            comment_url = "https://old.reddit.com" + permalink
+
+            try:
+                c_resp = requests.get(comment_url, headers=HEADERS, timeout=10)
+                if c_resp.status_code == 200:
+                    c_soup = BeautifulSoup(c_resp.text, "html.parser")
+
+                    comments = c_soup.find_all("div", class_="comment")
                     comments_text = []
-                    for c in c_list[:2]:
-                        if 'data' in c and 'body' in c['data'] and c['data']['body'] != "[deleted]":
-                            comments_text.append(f"- {c['data']['author']}: {c['data']['body'][:120]}")
+
+                    for c in comments:
+                        author_c = c.get("data-author")
+                        body = c.find("div", class_="md")
+
+                        if not author_c or not body:
+                            continue
+
+                        text = body.get_text(" ", strip=True)
+                        if text and text != "[deleted]":
+                            comments_text.append(
+                                f"- {author_c}: {text[:200]}"
+                            )
+
                     if comments_text:
                         story_blob += "TOP COMMENTS:\n" + "\n".join(comments_text)
-                
-                stories.append(story_blob)
-                time.sleep(0.5)
-            
-            if stories:
-                return stories
-            else:
-                print(f"⚠️  No posts found in the last 24 hours.")
-        
-        if attempt < max_attempts - 1:
-            print(f"⚠️  Failed to fetch data. Retrying in 2 seconds...")
-            time.sleep(2)
-    
-    print("❌ Failed to fetch data after 3 attempts.")
-    return []
+
+            except Exception:
+                pass
+
+            stories.append(story_blob)
+            time.sleep(1)  # polite scraping
+
+        return stories
+
+    except Exception as e:
+        print(f"❌ Scraping error: {e}")
+        return []
 
 
 def generate_newsletter_content(raw_stories):
