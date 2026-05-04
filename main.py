@@ -33,22 +33,21 @@ NEWSPAPER_CSS = """
         font-family: 'Lora', serif;
         margin: 0;
         padding: 0;
-        /* We make the body transparent so we can crop easily later */
-        background-color: transparent; 
+        background-color: #0a0000; 
     }
 
     .container {
         display: inline-block; 
-        background-color: #f4f1ea;
+        background-color: #2b0000;
         width: 800px;
         padding: 40px 50px;
-        color: #111;
+        color: #ffcccc;
         
-        /* Margin ensures the shadow isn't cut off */
         margin: 20px; 
-        box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        box-shadow: 0 0 30px rgba(255,0,0,0.5);
+        border: 4px solid #8b0000;
         
-        background-image: linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent);
+        background-image: linear-gradient(0deg, transparent 24%, rgba(255, 0, 0, .05) 25%, rgba(255, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(255, 0, 0, .05) 75%, rgba(255, 0, 0, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 0, 0, .05) 25%, rgba(255, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(255, 0, 0, .05) 75%, rgba(255, 0, 0, .05) 76%, transparent 77%, transparent);
         background-size: 50px 50px;
     }
 
@@ -57,11 +56,12 @@ NEWSPAPER_CSS = """
         font-size: 80px;
         text-align: center;
         margin: 10px 0;
-        color: #111;
+        color: #ff3333;
         line-height: 0.8;
-        border-bottom: 4px double #111;
+        border-bottom: 4px double #ff3333;
         padding-bottom: 25px;
-        text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        text-shadow: 4px 4px 0px rgba(0,0,0,0.8);
+        text-transform: uppercase;
     }
 
     .date-line {
@@ -69,64 +69,67 @@ NEWSPAPER_CSS = """
         font-family: 'Oswald', sans-serif;
         font-size: 13px;
         text-transform: uppercase;
-        border-bottom: 1px solid #333;
+        border-bottom: 1px solid #ff3333;
         margin-bottom: 30px;
         padding-bottom: 8px;
         letter-spacing: 3px;
         font-weight: bold;
+        color: #ff6666;
     }
 
     .columns {
         column-count: 2;
         column-gap: 40px;
-        column-rule: 1px solid #ccc;
+        column-rule: 1px solid #8b0000;
         text-align: justify;
     }
 
     h2 {
         font-family: 'Playfair Display', serif;
-        font-size: 24px;
+        font-size: 26px;
         font-weight: 900;
         text-transform: uppercase;
-        color: #111;
+        color: #ff4444;
         margin-top: 0;
         margin-bottom: 10px;
-        line-height: 1;
+        line-height: 1.1;
         break-after: avoid;
     }
     
     h2:not(:first-child) {
         margin-top: 30px;
-        border-top: 2px solid #111;
+        border-top: 2px solid #8b0000;
         padding-top: 15px;
     }
 
-    p { font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: #222; }
+    p { font-size: 16px; line-height: 1.6; margin-bottom: 15px; color: #ffdddd; }
     ul { padding-left: 20px; margin-top: 0; }
-    li { font-size: 15px; margin-bottom: 8px; line-height: 1.4; }
-    li strong { font-family: 'Oswald', sans-serif; text-transform: uppercase; color: #444; }
+    li { font-size: 15px; margin-bottom: 8px; line-height: 1.4; color: #ffdddd; }
+    li strong { font-family: 'Oswald', sans-serif; text-transform: uppercase; color: #ff8888; }
 
     blockquote {
-        border-left: 4px solid #111;
-        background: #e8e4db;
+        border-left: 6px solid #ff0000;
+        background: #1a0000;
         margin: 20px 0;
-        padding: 10px 15px;
+        padding: 15px 20px;
         font-style: italic;
         font-family: 'Playfair Display', serif;
         font-weight: 700;
-        font-size: 16px;
+        font-size: 18px;
+        color: #ff8888;
         break-inside: avoid;
+        box-shadow: inset 0 0 10px rgba(255,0,0,0.2);
     }
 
     .footer {
         text-align: center;
         font-family: 'Oswald', sans-serif;
-        font-size: 10px;
+        font-size: 11px;
         margin-top: 30px;
-        border-top: 1px solid #111;
+        border-top: 1px solid #ff3333;
         padding-top: 10px;
         width: 100%;
-        color: #666;
+        color: #ff6666;
     }
 </style>
 """
@@ -138,46 +141,13 @@ def get_json(url):
     except: return None
 
 def fetch_stories():
-    max_attempts = 3
-    url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url=https://reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
-    
-    for attempt in range(max_attempts):
-        print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
-        data = get_json(url)
-        
-        if data and 'data' in data and 'children' in data['data']:
-            stories = []
-            for post in data['data']['children']:
-                p = post['data']
-                story_blob = f"---\nTITLE: {p.get('title')}\nAUTHOR: u/{p.get('author')}\nUPVOTES: {p.get('score')}\nBODY TEXT: {p.get('selftext', '')[:400]}\n"
-                
-                comment_url = "https://reddit.com" + p.get("permalink") + ".json?sort=top"
-                proxy_url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url={comment_url}"
-                c_data = get_json(proxy_url)
-
-                if c_data and len(c_data) > 1 and 'data' in c_data[1] and 'children' in c_data[1]['data']:
-                    c_list = c_data[1]['data']['children']
-                    comments_text = []
-                    for c in c_list[:2]:
-                        if 'data' in c and 'body' in c['data'] and c['data']['body'] != "[deleted]":
-                            comments_text.append(f"- {c['data']['author']}: {c['data']['body'][:120]}")
-                    if comments_text:
-                        story_blob += "TOP COMMENTS:\n" + "\n".join(comments_text)
-                
-                stories.append(story_blob)
-                time.sleep(0.5)
-            
-            if stories:
-                return stories
-            else:
-                print(f"⚠️  No posts found in the last 24 hours.")
-        
-        if attempt < max_attempts - 1:
-            print(f"⚠️  Failed to fetch data. Retrying in 2 seconds...")
-            time.sleep(2)
-    
-    print("❌ Failed to fetch data after 3 attempts.")
-    return []
+    try:
+        with open("context.txt", "r", encoding="utf-8") as f:
+            content = f.read()
+        return [content]
+    except Exception as e:
+        print(f"Error reading context: {e}")
+        return []
 
 
 def generate_newsletter_content(raw_stories):
@@ -278,7 +248,6 @@ def generate_image_from_markdown(md_text):
     hti.browser.flags = [
         '--hide-scrollbars', 
         '--force-device-scale-factor=1', 
-        '--default-background-color=00000000',
         '--no-sandbox', 
         '--headless'
     ]
