@@ -33,21 +33,22 @@ NEWSPAPER_CSS = """
         font-family: 'Lora', serif;
         margin: 0;
         padding: 0;
-        background-color: #0a0000; 
+        /* We make the body transparent so we can crop easily later */
+        background-color: transparent; 
     }
 
     .container {
         display: inline-block; 
-        background-color: #2b0000;
+        background-color: #f4f1ea;
         width: 800px;
         padding: 40px 50px;
-        color: #ffcccc;
+        color: #111;
         
+        /* Margin ensures the shadow isn't cut off */
         margin: 20px; 
-        box-shadow: 0 0 30px rgba(255,0,0,0.5);
-        border: 4px solid #8b0000;
+        box-shadow: 0 0 30px rgba(0,0,0,0.3);
         
-        background-image: linear-gradient(0deg, transparent 24%, rgba(255, 0, 0, .05) 25%, rgba(255, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(255, 0, 0, .05) 75%, rgba(255, 0, 0, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 0, 0, .05) 25%, rgba(255, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(255, 0, 0, .05) 75%, rgba(255, 0, 0, .05) 76%, transparent 77%, transparent);
+        background-image: linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent);
         background-size: 50px 50px;
     }
 
@@ -56,12 +57,11 @@ NEWSPAPER_CSS = """
         font-size: 80px;
         text-align: center;
         margin: 10px 0;
-        color: #ff3333;
+        color: #111;
         line-height: 0.8;
-        border-bottom: 4px double #ff3333;
+        border-bottom: 4px double #111;
         padding-bottom: 25px;
-        text-shadow: 4px 4px 0px rgba(0,0,0,0.8);
-        text-transform: uppercase;
+        text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
     }
 
     .date-line {
@@ -69,67 +69,64 @@ NEWSPAPER_CSS = """
         font-family: 'Oswald', sans-serif;
         font-size: 13px;
         text-transform: uppercase;
-        border-bottom: 1px solid #ff3333;
+        border-bottom: 1px solid #333;
         margin-bottom: 30px;
         padding-bottom: 8px;
         letter-spacing: 3px;
         font-weight: bold;
-        color: #ff6666;
     }
 
     .columns {
         column-count: 2;
         column-gap: 40px;
-        column-rule: 1px solid #8b0000;
+        column-rule: 1px solid #ccc;
         text-align: justify;
     }
 
     h2 {
         font-family: 'Playfair Display', serif;
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 900;
         text-transform: uppercase;
-        color: #ff4444;
+        color: #111;
         margin-top: 0;
         margin-bottom: 10px;
-        line-height: 1.1;
+        line-height: 1;
         break-after: avoid;
     }
     
     h2:not(:first-child) {
         margin-top: 30px;
-        border-top: 2px solid #8b0000;
+        border-top: 2px solid #111;
         padding-top: 15px;
     }
 
-    p { font-size: 16px; line-height: 1.6; margin-bottom: 15px; color: #ffdddd; }
+    p { font-size: 15px; line-height: 1.5; margin-bottom: 15px; color: #222; }
     ul { padding-left: 20px; margin-top: 0; }
-    li { font-size: 15px; margin-bottom: 8px; line-height: 1.4; color: #ffdddd; }
-    li strong { font-family: 'Oswald', sans-serif; text-transform: uppercase; color: #ff8888; }
+    li { font-size: 15px; margin-bottom: 8px; line-height: 1.4; }
+    li strong { font-family: 'Oswald', sans-serif; text-transform: uppercase; color: #444; }
 
     blockquote {
-        border-left: 6px solid #ff0000;
-        background: #1a0000;
+        border-left: 4px solid #111;
+        background: #e8e4db;
         margin: 20px 0;
-        padding: 15px 20px;
+        padding: 10px 15px;
         font-style: italic;
         font-family: 'Playfair Display', serif;
         font-weight: 700;
-        font-size: 18px;
-        color: #ff8888;
+        font-size: 16px;
         break-inside: avoid;
-        box-shadow: inset 0 0 10px rgba(255,0,0,0.2);
     }
 
     .footer {
         text-align: center;
         font-family: 'Oswald', sans-serif;
-        font-size: 11px;
+        font-size: 10px;
         margin-top: 30px;
-        border-top: 1px solid #ff3333;
+        border-top: 1px solid #111;
         padding-top: 10px;
         width: 100%;
-        color: #ff6666;
+        color: #666;
     }
 </style>
 """
@@ -248,6 +245,7 @@ def generate_image_from_markdown(md_text):
     hti.browser.flags = [
         '--hide-scrollbars', 
         '--force-device-scale-factor=1', 
+        '--default-background-color=00000000',
         '--no-sandbox', 
         '--headless'
     ]
