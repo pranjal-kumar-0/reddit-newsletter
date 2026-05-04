@@ -138,13 +138,46 @@ def get_json(url):
     except: return None
 
 def fetch_stories():
-    try:
-        with open("context.txt", "r", encoding="utf-8") as f:
-            content = f.read()
-        return [content]
-    except Exception as e:
-        print(f"Error reading context: {e}")
-        return []
+    max_attempts = 3
+    url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url=https://reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
+    
+    for attempt in range(max_attempts):
+        print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
+        data = get_json(url)
+        
+        if data and 'data' in data and 'children' in data['data']:
+            stories = []
+            for post in data['data']['children']:
+                p = post['data']
+                story_blob = f"---\nTITLE: {p.get('title')}\nAUTHOR: u/{p.get('author')}\nUPVOTES: {p.get('score')}\nBODY TEXT: {p.get('selftext', '')[:400]}\n"
+                
+                comment_url = "https://reddit.com" + p.get("permalink") + ".json?sort=top"
+                proxy_url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url={comment_url}"
+                c_data = get_json(proxy_url)
+
+                if c_data and len(c_data) > 1 and 'data' in c_data[1] and 'children' in c_data[1]['data']:
+                    c_list = c_data[1]['data']['children']
+                    comments_text = []
+                    for c in c_list[:2]:
+                        if 'data' in c and 'body' in c['data'] and c['data']['body'] != "[deleted]":
+                            comments_text.append(f"- {c['data']['author']}: {c['data']['body'][:120]}")
+                    if comments_text:
+                        story_blob += "TOP COMMENTS:\n" + "\n".join(comments_text)
+                
+                stories.append(story_blob)
+                time.sleep(0.5)
+            
+            if stories:
+                return stories
+            else:
+                print(f"⚠️  No posts found in the last 24 hours.")
+        
+        if attempt < max_attempts - 1:
+            print(f"⚠️  Failed to fetch data. Retrying in 2 seconds...")
+            time.sleep(2)
+    
+    print("❌ Failed to fetch data after 3 attempts.")
+    return []
 
 
 def generate_newsletter_content(raw_stories):
