@@ -4,3 +4,4 @@ markdown
 html2image
 Pillow
 python-dotenv
+beautifulsoup4
