@@ -3,3 +3,4 @@ google-generativeai
 markdown
 html2image
 Pillow
+python-dotenv
