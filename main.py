@@ -2,27 +2,37 @@ import requests
 import datetime
 import time
 import os
+from dotenv import load_dotenv
+import io
 import google.generativeai as genai
 import markdown
+from bs4 import BeautifulSoup
 from html2image import Html2Image
-from PIL import Image  
+from PIL import Image
+
+load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 NEWSLETTER_ROLE_ID = os.getenv("NEWSLETTER_ROLE_ID")
-SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY")
+
+print(GEMINI_API_KEY)
+print(DISCORD_WEBHOOK_URL)
+print(NEWSLETTER_ROLE_ID)
+
+
 
 SUBREDDIT = "vitap"
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://www.google.com/',
     'Connection': 'keep-alive'
 }
 IMAGE_FILENAME = "vitap_daily_news.png"
 
 genai.configure(api_key=GEMINI_API_KEY)
+# Using Gemini 2.5 Flash which natively supports multimodal (text + images)
 model = genai.GenerativeModel('gemini-2.5-flash') 
 
 NEWSPAPER_CSS = """
@@ -33,7 +43,6 @@ NEWSPAPER_CSS = """
         font-family: 'Lora', serif;
         margin: 0;
         padding: 0;
-        /* We make the body transparent so we can crop easily later */
         background-color: transparent; 
     }
 
@@ -43,11 +52,8 @@ NEWSPAPER_CSS = """
         width: 800px;
         padding: 40px 50px;
         color: #111;
-        
-        /* Margin ensures the shadow isn't cut off */
         margin: 20px; 
         box-shadow: 0 0 30px rgba(0,0,0,0.3);
-        
         background-image: linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent);
         background-size: 50px 50px;
     }
@@ -131,57 +137,105 @@ NEWSPAPER_CSS = """
 </style>
 """
 
-def get_json(url):
+def fetch_stories():
+    url = f"https://old.reddit.com/r/{SUBREDDIT}/top/"
+    print(f"🕵️  Gathering intel from {url}...")
+    
     try:
         resp = requests.get(url, headers=HEADERS)
-        if resp.status_code == 200: return resp.json()
-    except: return None
+        resp.raise_for_status()
+    except Exception as e:
+        print(f"❌ Failed to fetch front page: {e}")
+        return [], []
 
-def fetch_stories():
-    max_attempts = 3
-    url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url=https://reddit.com/r/{SUBREDDIT}/top.json?t=day&limit=6"
+    soup = BeautifulSoup(resp.text, 'html.parser')
+    # Filter for standard posts (ignore ads/promoted)
+    posts = [p for p in soup.select('#siteTable .thing') if 'promoted' not in p.get('class', [])][:10]
     
-    for attempt in range(max_attempts):
-        print(f"🕵️  Gathering intel from r/{SUBREDDIT}... (Attempt {attempt + 1}/{max_attempts})")
-        data = get_json(url)
+    if not posts:
+        print("⚠️ No posts found on the page.")
+        return [], []
+
+    stories = []
+    downloaded_images = []
+
+    for idx, post in enumerate(posts, 1):
+        # Extract basic post info
+        title_elem = post.select_one('p.title a.title')
+        title = title_elem.text.strip() if title_elem else "No Title"
         
-        if data and 'data' in data and 'children' in data['data']:
-            stories = []
-            for post in data['data']['children']:
-                p = post['data']
-                story_blob = f"---\nTITLE: {p.get('title')}\nAUTHOR: u/{p.get('author')}\nUPVOTES: {p.get('score')}\nBODY TEXT: {p.get('selftext', '')[:400]}\n"
-                
-                comment_url = "https://reddit.com" + p.get("permalink") + ".json?sort=top"
-                proxy_url = f"https://api.scraperapi.com/?api_key={SCRAPER_API_KEY}&url={comment_url}"
-                c_data = get_json(proxy_url)
-
-                if c_data and len(c_data) > 1 and 'data' in c_data[1] and 'children' in c_data[1]['data']:
-                    c_list = c_data[1]['data']['children']
-                    comments_text = []
-                    for c in c_list[:2]:
-                        if 'data' in c and 'body' in c['data'] and c['data']['body'] != "[deleted]":
-                            comments_text.append(f"- {c['data']['author']}: {c['data']['body'][:120]}")
-                    if comments_text:
-                        story_blob += "TOP COMMENTS:\n" + "\n".join(comments_text)
-                
-                stories.append(story_blob)
-                time.sleep(0.5)
-            
-            if stories:
-                return stories
-            else:
-                print(f"⚠️  No posts found in the last 24 hours.")
+        author_elem = post.select_one('a.author')
+        author = author_elem.text.strip() if author_elem else "Unknown"
         
-        if attempt < max_attempts - 1:
-            print(f"⚠️  Failed to fetch data. Retrying in 2 seconds...")
-            time.sleep(2)
-    
-    print("❌ Failed to fetch data after 3 attempts.")
-    return []
+        score_elem = post.select_one('.score.unvoted')
+        score = score_elem.text.strip() if score_elem else "0"
+        
+        comments_elem = post.select_one('a.comments')
+        comments_url = comments_elem['href'] if comments_elem else None
+        
+        # Check for image URL
+        data_url = post.get('data-url', '')
+        img_url = data_url if data_url.endswith(('.jpg', '.png', '.jpeg', '.gif', '.webp')) else None
+
+        body_text = ""
+        comments_text = []
+
+        # Scrape Comments Page
+        if comments_url:
+            if not comments_url.startswith('http'):
+                comments_url = "https://old.reddit.com" + comments_url
+                
+            time.sleep(1) # Be nice to Reddit's servers
+            try:
+                c_resp = requests.get(comments_url, headers=HEADERS)
+                c_soup = BeautifulSoup(c_resp.text, 'html.parser')
+                
+                # Extract main post text if exists
+                expando = c_soup.select_one('.expando .usertext-body .md')
+                if expando:
+                    body_text = expando.text.strip()[:400]
+                
+                # Extract top 2 comments
+                comments_list = c_soup.select('.commentarea .thing.comment')[:2]
+                for c in comments_list:
+                    c_author_elem = c.select_one('a.author')
+                    c_author = c_author_elem.text.strip() if c_author_elem else "Unknown"
+                    
+                    c_body_elem = c.select_one('.usertext-body .md')
+                    c_body = c_body_elem.text.strip() if c_body_elem else ""
+                    
+                    if c_body and c_body != "[deleted]":
+                        comments_text.append(f"- {c_author}: {c_body[:120]}")
+            except Exception as e:
+                print(f"⚠️ Failed to parse comments for {title[:20]}: {e}")
+
+        # Download image if it exists to pass to Gemini
+        if img_url:
+            try:
+                img_r = requests.get(img_url, headers=HEADERS)
+                if img_r.status_code == 200:
+                    img_obj = Image.open(io.BytesIO(img_r.content)).convert('RGB')
+                    downloaded_images.append(img_obj)
+            except Exception as e:
+                print(f"⚠️ Failed to download image {img_url}: {e}")
+
+        # Construct Story Text
+        story_blob = f"---\nTITLE: {title}\nAUTHOR: u/{author}\nUPVOTES: {score}\n"
+        if body_text:
+            story_blob += f"BODY TEXT: {body_text}...\n"
+        if img_url:
+            story_blob += f"[IMAGE ATTACHED AND SENT TO AI]\n"
+        if comments_text:
+            story_blob += "TOP COMMENTS:\n" + "\n".join(comments_text) + "\n"
+
+        stories.append(story_blob)
+        print(f"✅ Fetched ({idx}/10): {title[:40]}...")
+
+    return stories, downloaded_images
 
 
-def generate_newsletter_content(raw_stories):
-    print("🧠 AI Editor is writing the newspaper...")
+def generate_newsletter_content(raw_stories, images):
+    print("🧠 AI Editor is analyzing text and images to write the newspaper...")
     today = datetime.date.today().strftime("%A, %B %d, %Y")
     
     prompt = f"""
@@ -191,6 +245,8 @@ Today's Date: {today}
 
 RAW DATA FROM r/vitap:
 { "".join(raw_stories) }
+
+(Note: You also have access to images extracted from these posts provided alongside this prompt. Use their visual context to make your reporting more accurate and entertaining!)
 
 ============================
 STRICT EDITORIAL RULES:
@@ -221,7 +277,7 @@ EDITORIAL TONE:
 CONTENT RULES:
 ============================
 
-- Each story: MAXIMUM 3 sentences.
+- Each story: MAXIMUM 3 sentences. Include observations from the provided images if they are relevant.
 - Campus briefs: one sentence per bullet.
 - Student quote: must be realistic and taken from provided data.
 - Weather report: metaphorical, mood-based, no real weather.
@@ -245,11 +301,15 @@ REQUIRED OUTPUT FORMAT:
 ## WEATHER REPORT
 (Weather forecast based on subreddit mood, written like a newspaper report. Justify the reason with)
 """
+    
+    # Gemini 2.5 Flash can take a list containing the text prompt and PIL Images directly!
+    payload = [prompt] + images
 
     try:
-        response = model.generate_content(prompt)
+        response = model.generate_content(payload)
         return response.text
-    except Exception as e: return f"AI Error: {e}"
+    except Exception as e: 
+        return f"AI Error: {e}"
 
 def generate_image_from_markdown(md_text):
     print("🎨 Setting type and printing image...")
@@ -268,7 +328,6 @@ def generate_image_from_markdown(md_text):
             <div class="columns">
                 {html_content}
             </div>
-
         </div>
     </body>
     </html>
@@ -328,10 +387,10 @@ def send_image_to_discord():
         print(f"❌ Delivery Failed: {response.status_code} - {response.text}")
 
 if __name__ == "__main__":
-    raw_data = fetch_stories()
+    raw_text_data, raw_images = fetch_stories()
     
-    if raw_data:
-        ai_text = generate_newsletter_content(raw_data)
+    if raw_text_data:
+        ai_text = generate_newsletter_content(raw_text_data, raw_images)
         generate_image_from_markdown(ai_text)
         send_image_to_discord()
     else:
